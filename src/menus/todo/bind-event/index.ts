@@ -1,6 +1,6 @@
 import Editor from '../../../editor/index'
 import $ from '../../../utils/dom-core'
-import { isTodo, isAllTodo } from '../util'
+import { isAllTodo } from '../util'
 import createTodo from '../todo'
 
 /**
@@ -20,11 +20,6 @@ function bindEvent(editor: Editor) {
             const $topSelectElem = editor.selection.getSelectionRangeTopNodes(editor)[0]
             const $li = $topSelectElem.childNodes()?.get(0)
             const selectionNode = window.getSelection()?.anchorNode as Node
-
-            // const testNode = $(`<b><i><span>test132</span><span>232333</span></i><span>12345678</span><span>xxd</span>dddd</b>`).getNode()
-            // // const txt = $(testNode).childNodes()?.getNode(1).childNodes[0] as Node
-            // const txt = $(testNode).childNodes()?.childNodes()?.get(1).getNode().childNodes[0] as Node
-            // console.log(txt)
 
             // 回车时内容为空时，删去此行
             if ($topSelectElem.text() === '') {
@@ -56,47 +51,39 @@ function bindEvent(editor: Editor) {
             }
         }
     }
+
     /**
-     * todo的自定义删除事件
-     * @param e 事件属性
+     * 自定义删除事件，用来处理光标在最前面删除input产生的问题
      */
-    function todoDel(e: Event) {
-        const $topSelectElem = editor.selection.getSelectionRangeTopNodes(editor)[0]
-        if (isTodo($topSelectElem)) {
-            if ($topSelectElem.text() === '') {
-                console.log($topSelectElem)
-                e.preventDefault()
-                const $p = $(`<p><br></p>`)
+    function delDown() {
+        if (isAllTodo(editor)) {
+            const $topSelectElem = editor.selection.getSelectionRangeTopNodes(editor)[0]
+            const $li = $topSelectElem.childNodes()?.getNode()
+            const $p = $(`<p></p>`)
+            const p = $p.getNode()
+            const selectionNode = window.getSelection()?.anchorNode as Node
+            const pos = editor.selection.getCursorPos()
+            const prevNode = selectionNode.previousSibling
+            if (
+                prevNode?.nodeName === 'SPAN' &&
+                prevNode.childNodes[0].nodeName === 'INPUT' &&
+                pos === 0
+            ) {
+                $li?.childNodes.forEach((v, index) => {
+                    if (index === 0) return
+                    p.appendChild(v.cloneNode(true))
+                })
                 $p.insertAfter($topSelectElem)
-                editor.selection.saveRange()
-                // 兼容firefox下光标位置问题
-                editor.selection.moveCursor($p.getNode())
                 $topSelectElem.remove()
             }
         }
     }
-
-    /**
-     * 删除事件up时，对处于第一行的todo进行特殊处理
-     */
-    function delUp() {
-        const $topSelectElem = editor.selection.getSelectionRangeTopNodes(editor)[0]
-        const nodeName = $topSelectElem.getNodeName()
-        if (nodeName === 'UL') {
-            if ($topSelectElem.text() === '' && !isTodo($topSelectElem)) {
-                $(`<p><br></p>`).insertAfter($topSelectElem)
-                $topSelectElem.remove()
-            }
-        }
-    }
-
     editor.txt.eventHooks.enterDownEvents.push(todoEnter)
-    editor.txt.eventHooks.deleteDownEvents.push(todoDel)
-    editor.txt.eventHooks.deleteUpEvents.push(delUp)
+    editor.txt.eventHooks.deleteDownEvents.push(delDown)
 }
 
 /**
- *
+ *  获取截断后的新节点
  * @param node 顶级节点
  */
 function getNewNode(node: Node, textNode: Node, pos: number): Node | undefined {

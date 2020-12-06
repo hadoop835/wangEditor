@@ -246,7 +246,6 @@ class SelectionAndRange {
      */
     public moveCursor(node: Node, position?: number) {
         const range = this.getRange()
-        console.log(range)
         //对文本节点特殊处理
         const len = node.nodeType === 3 ? node.nodeValue?.length : node.childNodes.length
         const pos: number = position || position === 0 ? position : (len as number)
