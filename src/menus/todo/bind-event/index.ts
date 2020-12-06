@@ -1,5 +1,5 @@
 import Editor from '../../../editor/index'
-import $, { DomElement } from '../../../utils/dom-core'
+import $ from '../../../utils/dom-core'
 import { isTodo, isAllTodo } from '../util'
 import createTodo from '../todo'
 
@@ -15,69 +15,45 @@ function bindEvent(editor: Editor) {
     function todoEnter(e: Event) {
         // 判断是否为todo节点
         if (isAllTodo(editor)) {
-            console.log(editor.selection.getSelectionContainerElem())
+            e.preventDefault()
 
-            // e.preventDefault()
             const $topSelectElem = editor.selection.getSelectionRangeTopNodes(editor)[0]
-            const $selectElem = editor.selection.getSelectionContainerElem() as DomElement
-            const todo = createTodo($selectElem)
+            const $li = $topSelectElem.childNodes()?.get(0)
+            const selectionNode = window.getSelection()?.anchorNode as Node
+
+            // const testNode = $(`<b><i><span>test132</span><span>232333</span></i><span>12345678</span><span>xxd</span>dddd</b>`).getNode()
+            // // const txt = $(testNode).childNodes()?.getNode(1).childNodes[0] as Node
+            // const txt = $(testNode).childNodes()?.childNodes()?.get(1).getNode().childNodes[0] as Node
+            // console.log(txt)
+
+            // 回车时内容为空时，删去此行
+            if ($topSelectElem.text() === '') {
+                const $p = $(`<p><br></p>`)
+                $p.insertAfter($topSelectElem)
+                editor.selection.moveCursor($p.getNode())
+                $topSelectElem.remove()
+                return
+            }
+
+            const pos = editor.selection.getCursorPos() as number
+            const newNode = getNewNode($li?.getNode() as Node, selectionNode, pos)
+            const todo = createTodo($(newNode))
+            const $inputcontainer = todo.getInputContainer()
             const $newTodo = todo.getTodo()
+            // 处理光标在最前面时回车input不显示的问题
+            if ($li?.text() === '') {
+                $li?.append($(`<br>`))
+            }
             $newTodo.insertAfter($topSelectElem)
-            editor.selection.moveCursor($newTodo.getNode())
-            $selectElem.remove()
-
-            // if ($topSelectElem.text() === '') {
-            //     const $p = $(`<p><br></p>`)
-            //     $p.insertAfter($topSelectElem)
-            //     editor.selection.moveCursor($p.getNode(), 0)
-            //     $topSelectElem.remove()
-            //     return
-            // }
-            // // console.log(editor.selection.getRange())
-            // // console.log($selectElem)
-            // const selectionNode = editor.selection.getSelection()?.anchorNode as Node
-            // console.log(editor.selection.getSelection()?.anchorNode)
-            // console.log(selectionNode)
-            // const $p = $(`<p></p>`)
-            // const p = $p.getNode() as Node
-            // dealText(selectionNode, p)
-            // console.log(p)
-            // console.log(selectionNode?.nextSibling)
-            // const cursorPos: number =
-            //     selectionNode?.nodeName === '#text'
-            //         ? (editor.selection.getCursorPos() as number)
-            //         : 0
-            // console.log(cursorPos)
-            // let content
-            // // 处理回车后光标有内容的部分
-            // if ($selectElem?.text().length !== cursorPos && cursorPos >= 0) {
-            //     console.log($selectElem?.text().length)
-            //     const txt = $selectElem?.text().slice(cursorPos)
-            //     const orginTxt = $selectElem?.text().slice(0, cursorPos) as string
-            //     const textNode = $selectElem?.childNodes()?.getNode(1)
-            //     // 不带样式的文本内容需要特殊处理
-            //     textNode ? (textNode.nodeValue = orginTxt) : $selectElem?.text(orginTxt)
-            //     content = $(`<p>${txt}</p>`)
-            // } else if ($topSelectElem.text() === '') {
-            //     const $p = $(`<p><br></p>`)
-            //     $p.insertAfter($topSelectElem)
-            //     editor.selection.moveCursor($p.getNode(), 0)
-            //     $topSelectElem.remove()
-            //     return
-            // }
-            // const todo = createTodo(content)
-            // const $newTodo = todo.getTodo()
-            // const $newTodoChildren = $newTodo.childNodes()?.getNode() as Node
-            // if (!content) {
-            //     const $input = $newTodo.childNodes()?.childNodes() as DomElement
-            //     const $br = $(`<br>`)
-            //     $br.insertAfter($input)
-            // }
-
-            // $newTodo.insertAfter($topSelectElem)
-            // !content
-            //     ? editor.selection.moveCursor($newTodoChildren, 1)
-            //     : editor.selection.moveCursor($newTodoChildren)
+            // 处理光标在最后面的，input不显示的问题(必须插入之后移动光标)
+            if (!$inputcontainer.getNode().nextSibling) {
+                const $br = $(`<br>`)
+                console.log($($inputcontainer))
+                $br.insertAfter($inputcontainer)
+                editor.selection.moveCursor($inputcontainer.parent().getNode())
+            } else {
+                editor.selection.moveCursor($newTodo.getNode())
+            }
         }
     }
     /**
@@ -114,9 +90,68 @@ function bindEvent(editor: Editor) {
         }
     }
 
-    editor.txt.eventHooks.enterUpEvents.push(todoEnter)
+    editor.txt.eventHooks.enterDownEvents.push(todoEnter)
     editor.txt.eventHooks.deleteDownEvents.push(todoDel)
     editor.txt.eventHooks.deleteUpEvents.push(delUp)
+}
+
+/**
+ *
+ * @param node 顶级节点
+ */
+function getNewNode(node: Node, textNode: Node, pos: number): Node | undefined {
+    if (!node.hasChildNodes()) return
+
+    const newNode = node.cloneNode() as ChildNode
+    let end = false
+    if (textNode.nodeValue === '') {
+        end = true
+    }
+
+    let delArr: Node[] = []
+    node.childNodes.forEach(v => {
+        //     //选中后
+        if (!v.contains(textNode) && end) {
+            newNode.appendChild(v.cloneNode(true))
+            delArr.push(v)
+        }
+        //     // 选中
+        if (v.contains(textNode)) {
+            if (v.nodeType === 1) {
+                const childNode = getNewNode(v, textNode, pos) as Node
+                if (childNode) newNode?.appendChild(childNode)
+            }
+            if (v.nodeType === 3) {
+                if (textNode.isEqualNode(v)) {
+                    const textContent = dealTextNode(v, pos)
+                    newNode.textContent = textContent
+                } else {
+                    newNode.textContent = v.nodeValue
+                }
+            }
+            end = true
+        }
+    })
+    // 删除选中后原来的节点
+    delArr.forEach(v => {
+        const node = v as ChildNode
+        node.remove()
+    })
+
+    return newNode
+}
+
+/**
+ * 获取新的文本节点
+ * @param node
+ * @param pos
+ */
+function dealTextNode(node: Node, pos: number) {
+    let content = node.nodeValue
+    let oldContent = content?.slice(0, pos) as string
+    content = content?.slice(pos) as string
+    node.nodeValue = oldContent
+    return content
 }
 
 export default bindEvent
