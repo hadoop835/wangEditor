@@ -57,7 +57,7 @@ function bindEvent(editor: Editor) {
     /**
      * 自定义删除事件，用来处理光标在最前面删除input产生的问题
      */
-    function delDown() {
+    function delDown(e: Event) {
         if (isAllTodo(editor)) {
             const $topSelectElem = editor.selection.getSelectionRangeTopNodes(editor)[0]
             const $li = $topSelectElem.childNodes()?.getNode()
@@ -66,16 +66,31 @@ function bindEvent(editor: Editor) {
             const selectionNode = window.getSelection()?.anchorNode as Node
             const pos = editor.selection.getCursorPos()
             const prevNode = selectionNode.previousSibling
+
+            // 处理内容为空的情况
+            if ($topSelectElem.text() === '') {
+                e.preventDefault()
+                console.log('block')
+                const $newP = $(`<p><br></p>`)
+                $newP.insertAfter($topSelectElem)
+                $topSelectElem.remove()
+                editor.selection.moveCursor($newP.getNode(), 0)
+                return
+            }
+
+            // 处理有内容时，光标在最前面的情况
             if (
                 prevNode?.nodeName === 'SPAN' &&
                 prevNode.childNodes[0].nodeName === 'INPUT' &&
                 pos === 0
             ) {
+                e.preventDefault()
                 $li?.childNodes.forEach((v, index) => {
                     if (index === 0) return
                     p.appendChild(v.cloneNode(true))
                 })
                 $p.insertAfter($topSelectElem)
+
                 $topSelectElem.remove()
             }
         }
