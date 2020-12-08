@@ -41,9 +41,11 @@ function bindEvent(editor: Editor) {
             }
             $newTodo.insertAfter($topSelectElem)
             // 处理光标在最后面的，input不显示的问题(必须插入之后移动光标)
-            if (!$inputcontainer.getNode().nextSibling) {
+            if (
+                !$inputcontainer.getNode().nextSibling ||
+                $inputcontainer.getNode().nextSibling?.textContent === ''
+            ) {
                 const $br = $(`<br>`)
-                console.log($($inputcontainer))
                 $br.insertAfter($inputcontainer)
                 editor.selection.moveCursor($inputcontainer.parent().getNode())
             } else {
