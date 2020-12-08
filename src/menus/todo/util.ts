@@ -1,35 +1,5 @@
-import $, { DomElement } from '../../utils/dom-core'
+import { DomElement } from '../../utils/dom-core'
 import Editor from '../../editor'
-
-/**
- * 创建一个todo元素节点
- * @param $orginElem 需要别替换为todo的节点
- */
-function createTodo($orginElem?: DomElement): DomElement {
-    let checked = false
-    let content: DomElement = $orginElem?.childNodes()?.clone(true) as DomElement
-
-    const $targetElem = $(
-        `<ul style="margin:0;"><li style="list-style:none;"><input type="checkbox" style="margin-right:3px;"></li></ul>`
-    )
-    const input = $targetElem.childNodes()?.childNodes()?.getNode()
-    const $input = $(input)
-    if (content) {
-        content.insertAfter($input)
-    }
-
-    // 设置checkbox点击状态的保存
-    $input.on('click', () => {
-        if (checked) {
-            $input?.removeAttr('checked')
-        } else {
-            $input?.attr('checked', '')
-        }
-        checked = !checked
-    })
-
-    return $targetElem
-}
 
 /**
  * 判断传入的单行顶级选区选取是不是todo
@@ -62,4 +32,65 @@ function isAllTodo(editor: Editor) {
     })
 }
 
-export { createTodo, isTodo, isAllTodo }
+/**
+ * 根据所在的文本节点和光标在文本节点的位置获取截断的后节点内容
+ * @param node 顶级节点
+ * @param textNode 光标所在的文本节点
+ * @param pos 光标在文本节点的位置
+ */
+function getNewNode(node: Node, textNode: Node, pos: number): Node | undefined {
+    if (!node.hasChildNodes()) return
+
+    const newNode = node.cloneNode() as ChildNode
+    let end = false
+    if (textNode.nodeValue === '') {
+        end = true
+    }
+
+    let delArr: Node[] = []
+    node.childNodes.forEach(v => {
+        //选中后
+        if (!v.contains(textNode) && end) {
+            newNode.appendChild(v.cloneNode(true))
+            delArr.push(v)
+        }
+        // 选中
+        if (v.contains(textNode)) {
+            if (v.nodeType === 1) {
+                const childNode = getNewNode(v, textNode, pos) as Node
+                if (childNode.textContent !== '') newNode?.appendChild(childNode)
+            }
+            if (v.nodeType === 3) {
+                if (textNode.isEqualNode(v)) {
+                    const textContent = dealTextNode(v, pos)
+                    newNode.textContent = textContent
+                } else {
+                    newNode.textContent = v.nodeValue
+                }
+            }
+            end = true
+        }
+    })
+    // 删除选中后原来的节点
+    delArr.forEach(v => {
+        const node = v as ChildNode
+        node.remove()
+    })
+
+    return newNode
+}
+
+/**
+ * 获取新的文本节点
+ * @param node 要处理的文本节点
+ * @param pos  光标在文本节点所在的位置
+ */
+function dealTextNode(node: Node, pos: number) {
+    let content = node.nodeValue
+    let oldContent = content?.slice(0, pos) as string
+    content = content?.slice(pos) as string
+    node.nodeValue = oldContent
+    return content
+}
+
+export { getNewNode, isTodo, isAllTodo }

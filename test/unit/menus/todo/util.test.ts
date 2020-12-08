@@ -1,0 +1,32 @@
+import $ from '../../../../src/utils/dom-core'
+import { getNewNode } from '../../../../src/menus/todo/util'
+
+test('测试光标位置在文本节点中间生成截断新节点', () => {
+    const testNode = $(
+        `<b><i><span>test132</span><span>232333</span></i><span>12345678</span><span>xxd</span>dddd</b>`
+    ).getNode()
+    const txt = $(testNode).childNodes()?.getNode(1).childNodes[0] as Node
+    // txt 12345678
+    const res = getNewNode(testNode, txt, 3) as Element
+    expect(res.outerHTML).toEqual(`<b><span>45678</span><span>xxd</span>dddd</b>`)
+})
+
+test('测试光标位置在文本节点最前面生成截断新节点', () => {
+    const testNode = $(
+        `<b><i><span>test132</span><span>232333</span></i><span>12345678</span><span>xxd</span>dddd</b>`
+    ).getNode()
+    const txt = $(testNode).childNodes()?.getNode(1).childNodes[0] as Node
+    // txt 12345678
+    const res = getNewNode(testNode, txt, 0) as Element
+    expect(res.outerHTML).toEqual(`<b><span>12345678</span><span>xxd</span>dddd</b>`)
+})
+
+test('测试光标位置在文本节点最后面生成截断新节点', () => {
+    const testNode = $(
+        `<b><i><span>test132</span><span>232333</span></i><span>12345678</span><span>xxd</span>dddd</b>`
+    ).getNode()
+    const txt = $(testNode).childNodes()?.getNode(1).childNodes[0] as Node
+    // txt 12345678
+    const res = getNewNode(testNode, txt, 8) as Element
+    expect(res.outerHTML).toEqual(`<b><span>xxd</span>dddd</b>`)
+})

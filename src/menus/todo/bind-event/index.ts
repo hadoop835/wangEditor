@@ -1,6 +1,6 @@
 import Editor from '../../../editor/index'
 import $ from '../../../utils/dom-core'
-import { isAllTodo } from '../util'
+import { getNewNode, isAllTodo } from '../util'
 import createTodo from '../todo'
 
 /**
@@ -97,65 +97,6 @@ function bindEvent(editor: Editor) {
     }
     editor.txt.eventHooks.enterDownEvents.push(todoEnter)
     editor.txt.eventHooks.deleteDownEvents.push(delDown)
-}
-
-/**
- *  获取截断后的新节点
- * @param node 顶级节点
- */
-function getNewNode(node: Node, textNode: Node, pos: number): Node | undefined {
-    if (!node.hasChildNodes()) return
-
-    const newNode = node.cloneNode() as ChildNode
-    let end = false
-    if (textNode.nodeValue === '') {
-        end = true
-    }
-
-    let delArr: Node[] = []
-    node.childNodes.forEach(v => {
-        //     //选中后
-        if (!v.contains(textNode) && end) {
-            newNode.appendChild(v.cloneNode(true))
-            delArr.push(v)
-        }
-        //     // 选中
-        if (v.contains(textNode)) {
-            if (v.nodeType === 1) {
-                const childNode = getNewNode(v, textNode, pos) as Node
-                if (childNode) newNode?.appendChild(childNode)
-            }
-            if (v.nodeType === 3) {
-                if (textNode.isEqualNode(v)) {
-                    const textContent = dealTextNode(v, pos)
-                    newNode.textContent = textContent
-                } else {
-                    newNode.textContent = v.nodeValue
-                }
-            }
-            end = true
-        }
-    })
-    // 删除选中后原来的节点
-    delArr.forEach(v => {
-        const node = v as ChildNode
-        node.remove()
-    })
-
-    return newNode
-}
-
-/**
- * 获取新的文本节点
- * @param node
- * @param pos
- */
-function dealTextNode(node: Node, pos: number) {
-    let content = node.nodeValue
-    let oldContent = content?.slice(0, pos) as string
-    content = content?.slice(pos) as string
-    node.nodeValue = oldContent
-    return content
 }
 
 export default bindEvent
