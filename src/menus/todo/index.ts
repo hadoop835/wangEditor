@@ -52,11 +52,6 @@ class Todo extends BtnMenu implements MenuActive {
         topNodeElem.forEach($node => {
             const nodeName = $node?.getNodeName()
             if (nodeName === 'P') {
-                const img = $node.children()?.get() as DomElement
-                // 对于图片进行特殊处理
-                if (img?.length > 0 && img?.getNodeName() === 'IMG') {
-                    return
-                }
                 const todo = createTodo($node)
                 const todoNode = todo.getTodo()
                 const child = todoNode.children()?.getNode() as Node
