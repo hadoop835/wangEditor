@@ -55,11 +55,8 @@ class Todo extends BtnMenu implements MenuActive {
                 const todo = createTodo($node)
                 const todoNode = todo.getTodo()
                 const child = todoNode.children()?.getNode() as Node
-                const textNode = todoNode.childNodes()?.childNodes()?.last().selector as Node
                 todoNode.insertAfter($node)
-                todoNode.text() === ''
-                    ? editor.selection.moveCursor(child, 1)
-                    : editor.selection.moveCursor(textNode)
+                editor.selection.moveCursor(child)
                 $node.remove()
                 this.active()
             }

@@ -40,16 +40,19 @@ function bindEvent(editor: Editor) {
                 $li?.append($(`<br>`))
             }
             $newTodo.insertAfter($topSelectElem)
-            // 处理光标在最后面的，input不显示的问题(必须插入之后移动光标)
+            // 处理在google中光标在最后面的，input不显示的问题(必须插入之后移动光标)
             if (
                 !$inputcontainer.getNode().nextSibling ||
                 $inputcontainer.getNode().nextSibling?.textContent === ''
             ) {
-                const $br = $(`<br>`)
-                $br.insertAfter($inputcontainer)
-                editor.selection.moveCursor($inputcontainer.parent().getNode())
+                // 防止多个br出现的情况
+                if ($inputcontainer.getNode().nextSibling?.nodeName !== 'BR') {
+                    const $br = $(`<br>`)
+                    $br.insertAfter($inputcontainer)
+                }
+                editor.selection.moveCursor($inputcontainer.parent().getNode(), 1)
             } else {
-                editor.selection.moveCursor($newTodo.getNode())
+                editor.selection.moveCursor($inputcontainer.parent().getNode())
             }
         }
     }
@@ -70,7 +73,6 @@ function bindEvent(editor: Editor) {
             // 处理内容为空的情况
             if ($topSelectElem.text() === '') {
                 e.preventDefault()
-                console.log('block')
                 const $newP = $(`<p><br></p>`)
                 $newP.insertAfter($topSelectElem)
                 $topSelectElem.remove()

@@ -240,15 +240,32 @@ class SelectionAndRange {
     }
 
     /**
-     * 移动光标位置
+     * 移动光标位置,默认情况下在尾部
+     * 有一个特殊情况是firefox下的文本节点会自动补充一个br元素，会导致自动换行
+     * 所以默认情况下在firefox下的文本节点会自动移动到br前面
      * @param {Node} node 元素节点
-     * @param {number} position 光标的位置 默认在尾部
+     * @param {number} position 光标的位置
      */
     public moveCursor(node: Node, position?: number) {
         const range = this.getRange()
         //对文本节点特殊处理
-        const len = node.nodeType === 3 ? node.nodeValue?.length : node.childNodes.length
-        const pos: number = position || position === 0 ? position : (len as number)
+        let len: number
+        if (node.nodeType === 3) {
+            len = node.nodeValue?.length as number
+            // 在firefox下文本节点下会自带一个br导致的自动换行问题
+            if (UA.isFirefox && len !== 0) {
+                len = len - 1
+            }
+        } else {
+            len = node.childNodes.length
+            // 在firefox下文本节点下会自带一个br导致的自动换行问题
+            if (UA.isFirefox && len !== 0) {
+                if (node.childNodes[len - 1].nodeName === 'BR') {
+                    len = len - 1
+                }
+            }
+        }
+        let pos: number = position || position === 0 ? position : len
         if (!range) {
             return
         }

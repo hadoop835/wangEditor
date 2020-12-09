@@ -58,7 +58,7 @@ function getNewNode(node: Node, textNode: Node, pos: number): Node | undefined {
         if (v.contains(textNode)) {
             if (v.nodeType === 1) {
                 const childNode = getNewNode(v, textNode, pos) as Node
-                if (childNode.textContent !== '') newNode?.appendChild(childNode)
+                if (childNode && childNode.textContent !== '') newNode?.appendChild(childNode)
             }
             if (v.nodeType === 3) {
                 if (textNode.isEqualNode(v)) {
